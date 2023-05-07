@@ -1,0 +1,16 @@
+[package]
+name = "maxminddb-writer"
+version = "0.1.0"
+edition = "2021"
+description = "Library for reading MaxMind DB"
+keywords = ["MaxMind", "GeoIP2", "GeoIP", "geolocation", "ip"]
+categories = ["database", "network-programming"]
+authors = ["Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+maxminddb = "0.23"
