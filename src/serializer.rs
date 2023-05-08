@@ -66,6 +66,10 @@ impl<W> Serializer<W> {
         Serializer { writer }
     }
 
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+
     fn write_control(&mut self, type_id: TypeId, size: usize) -> Result<(), Error>
     where
         W: std::io::Write,
@@ -104,7 +108,8 @@ impl<W> Serializer<W> {
 
         // write the leftover size
         let bytes = leftover_size.to_be_bytes();
-        self.writer.write_all(&bytes[(4 - bytes_count)..4])?;
+        self.writer
+            .write_all(&bytes[(bytes.len() - bytes_count)..bytes.len()])?;
 
         Ok(())
     }
@@ -533,7 +538,7 @@ impl_as_big_endian_slice_for!(u128);
 mod tests {
     use std::collections::HashMap;
 
-    use crate::metadata;
+    use crate::Database;
 
     use super::*;
 
@@ -570,14 +575,11 @@ mod tests {
     where
         T: serde::Serialize,
     {
-        let mut db = vec![0u8, 0, 17, 0, 0, 17]; // dummy node (just points to the first data object)
-        db.extend_from_slice(&[0; 16]);
-        Serializer::new(&mut db).serialize(value).unwrap();
-        db.extend_from_slice(metadata::METADATA_START_MARKER);
-        Serializer::new(&mut db)
-            .serialize(&metadata::DatabaseMetadata::default().with_node_count(1))
-            .unwrap();
-        db
+        let mut db = Database::default();
+        let data = db.insert_value(value).unwrap();
+        db.insert_node([false].into_iter(), data);
+        db.insert_node([true].into_iter(), data);
+        db.to_vec().unwrap()
     }
 
     fn test_pass_through_maxminddb<T>(value: T)
