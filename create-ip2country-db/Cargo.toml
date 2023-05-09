@@ -1,0 +1,20 @@
+[package]
+name = "create-ip2country-db"
+version = "0.1.0"
+edition = "2021"
+description = "Library for writing MaxMind DB"
+keywords = ["MaxMind", "GeoIP2", "GeoIP", "geolocation", "ip"]
+categories = ["database", "network-programming"]
+authors = ["Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"]
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow = { version = "1.0" }
+log = { version = "0.4.17" }
+maxminddb = { version = "0.23" }
+maxminddb-writer = { path = "../maxminddb-writer" }
+reqwest = { version = "0.11", features = ["stream"] }
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread", "sync"] }
+tokio-util = { version = "0.7", features = ["io"] }
+futures-util = { version = "0.3" }

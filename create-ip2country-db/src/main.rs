@@ -1,5 +1,3 @@
-#![cfg(feature = "ip2country")]
-
 use std::{collections::HashMap, path::Path};
 
 use futures_util::stream::TryStreamExt;
