@@ -1,8 +1,6 @@
 use paths::IntoBitPath;
 use serde::Serialize;
 
-#[cfg(feature = "ip2country")]
-pub mod countries;
 pub(crate) mod data;
 pub mod metadata;
 pub(crate) mod node;

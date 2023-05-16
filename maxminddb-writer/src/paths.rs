@@ -18,6 +18,19 @@ fn trailing_zeros(s: &[u8]) -> usize {
     count as usize
 }
 
+fn octets_with_mask_from_range<const N: usize>(
+    start: [u8; N],
+    stop: [u8; N],
+) -> Vec<([u8; N], u8)> {
+    let mut count = 0usize;
+    for (from, to) in start.iter().zip(stop.iter()) {
+        count <<= 8;
+        count |= (to - from) as usize;
+    }
+    count += 1;
+    octets_with_mask(start, count)
+}
+
 fn octets_with_mask<const N: usize>(mut start: [u8; N], mut count: usize) -> Vec<([u8; N], u8)> {
     let mut result = Vec::new();
     while count > 0 {
@@ -94,6 +107,30 @@ impl IpAddrWithMask {
                     Self::new(IpAddr::V6(addr), mask)
                 })
                 .collect(),
+        }
+    }
+
+    pub fn from_ip_range(first: IpAddr, last: IpAddr) -> Vec<Self> {
+        match (first, last) {
+            (IpAddr::V4(first), IpAddr::V4(last)) => {
+                octets_with_mask_from_range(first.octets(), last.octets())
+                    .into_iter()
+                    .map(|(octets, mask)| {
+                        let addr = Ipv4Addr::from(octets);
+                        Self::new(IpAddr::V4(addr), mask)
+                    })
+                    .collect()
+            }
+            (IpAddr::V6(first), IpAddr::V6(last)) => {
+                octets_with_mask_from_range(first.octets(), last.octets())
+                    .into_iter()
+                    .map(|(octets, mask)| {
+                        let addr = Ipv6Addr::from(octets);
+                        Self::new(IpAddr::V6(addr), mask)
+                    })
+                    .collect()
+            }
+            _ => panic!("IP version mismatch"),
         }
     }
 }
@@ -231,6 +268,18 @@ mod tests {
                 ([196, 11, 106, 0], 23),
                 ([196, 11, 108, 0], 24),
             ],
+        );
+    }
+
+    #[test]
+    fn test_octets_with_mask_from_range() {
+        assert_eq!(
+            octets_with_mask_from_range([196, 11, 105, 0], [196, 11, 105, 255]),
+            vec![([196, 11, 105, 0], 24),],
+        );
+        assert_eq!(
+            octets_with_mask_from_range([0, 0, 0, 0], [1, 0, 0, 255]),
+            vec![([0, 0, 0, 0], 8), ([1, 0, 0, 0], 24)],
         );
     }
 
