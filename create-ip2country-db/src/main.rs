@@ -49,8 +49,12 @@ async fn load_entries_from_url(
         }
 
         // extract IP address and mask
-        let Ok(ip) = parts[3].parse::<std::net::IpAddr>() else { continue; };
-        let Ok(count) = parts[4].parse::<usize>() else { continue; };
+        let Ok(ip) = parts[3].parse::<std::net::IpAddr>() else {
+            continue;
+        };
+        let Ok(count) = parts[4].parse::<usize>() else {
+            continue;
+        };
         for ip_with_mask in IpAddrWithMask::from_count(ip, count) {
             sender.send((ip_with_mask, country_code.clone())).await?;
         }
