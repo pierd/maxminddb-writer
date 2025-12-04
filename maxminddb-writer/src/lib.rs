@@ -66,17 +66,24 @@ impl Database {
 
 #[cfg(test)]
 mod tests {
+    use crate::metadata::RecordSize;
     use crate::paths::IpAddrWithMask;
 
     use super::*;
 
-    #[test]
-    fn test_simple() {
+    fn seed_simple_db() -> Database {
         let mut db = Database::default();
         let data_42 = db.insert_value(42u32).unwrap();
         let data_foo = db.insert_value("foo".to_string()).unwrap();
         db.insert_node("0.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), data_42);
         db.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), data_foo);
+
+        db
+    }
+
+    #[test]
+    fn test_simple() {
+        let db = seed_simple_db();
         let raw_db = db.to_vec().unwrap();
 
         let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
@@ -85,5 +92,50 @@ mod tests {
 
         assert_eq!(expected_data_42, 42);
         assert_eq!(expected_data_foo, "foo");
+    }
+
+    #[test]
+    fn test_small_record_write() {
+        let mut db = seed_simple_db();
+
+        // Force small record size to test the small node writing
+        db.metadata.record_size = RecordSize::Small;
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let expected_data: u32 = reader.lookup([0, 0, 0, 0].into()).unwrap();
+
+        assert_eq!(expected_data, 42);
+        assert!(matches!(db.metadata.record_size, RecordSize::Small));
+    }
+
+    #[test]
+    fn test_medium_record_write() {
+        let mut db = seed_simple_db();
+
+        // Force medium record size to test the medium node writing
+        db.metadata.record_size = RecordSize::Medium;
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let expected_data: u32 = reader.lookup([0, 0, 0, 0].into()).unwrap();
+
+        assert_eq!(expected_data, 42);
+        assert!(matches!(db.metadata.record_size, RecordSize::Medium));
+    }
+
+    #[test]
+    fn test_large_record_write() {
+        let mut db = seed_simple_db();
+
+        // Force large record size to test the large node writing
+        db.metadata.record_size = RecordSize::Large;
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let expected_data: u32 = reader.lookup([0, 0, 0, 0].into()).unwrap();
+
+        assert_eq!(expected_data, 42);
+        assert!(matches!(db.metadata.record_size, RecordSize::Large));
     }
 }
