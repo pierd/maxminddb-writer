@@ -247,9 +247,9 @@ where
         self.serialize_bool(false)
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         value.serialize(self)
     }
@@ -271,18 +271,18 @@ where
         self.serialize_str(variant)
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         self,
         _name: &'static str,
         _variant_index: u32,
@@ -290,7 +290,7 @@ where
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         value.serialize(self)
     }
@@ -360,9 +360,9 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(value)
     }
@@ -380,9 +380,9 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(value)
     }
@@ -400,9 +400,9 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(value)
     }
@@ -420,9 +420,9 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(value)
     }
@@ -441,16 +441,16 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(key)
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(value)
     }
@@ -468,13 +468,13 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_field<T: ?Sized>(
+    fn serialize_field<T>(
         &mut self,
         key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(key)?;
         self.serialize(value)
@@ -493,13 +493,13 @@ where
 
     type Error = <Self as ser::Serializer>::Error;
 
-    fn serialize_field<T: ?Sized>(
+    fn serialize_field<T>(
         &mut self,
         key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: serde::Serialize,
+        T: ?Sized + serde::Serialize,
     {
         self.serialize(key)?;
         self.serialize(value)
