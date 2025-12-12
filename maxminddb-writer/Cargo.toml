@@ -1,6 +1,6 @@
 [package]
 name = "maxminddb-writer"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Library for writing MaxMind DB"
 repository = "https://github.com/pierd/maxminddb-writer"
