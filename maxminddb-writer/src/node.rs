@@ -47,10 +47,10 @@ impl Node {
             ]),
             // 28 bits/ptr -> 7 bytes
             RecordSize::Medium => writer.write_all(&[
-                (ptrs[0] >> 20) as u8,
-                (ptrs[0] >> 12) as u8,
-                (ptrs[0] >> 4) as u8,
-                (ptrs[0] << 4) as u8 | (ptrs[1] >> 24) as u8,
+                (ptrs[0] >> 16) as u8,
+                (ptrs[0] >> 8) as u8,
+                ptrs[0] as u8,
+                (((ptrs[0] >> 24) << 4) | (ptrs[1] >> 24)) as u8, // Shared middle byte
                 (ptrs[1] >> 16) as u8,
                 (ptrs[1] >> 8) as u8,
                 ptrs[1] as u8,
@@ -151,6 +151,7 @@ impl Default for NodeTree {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Database;
 
     #[test]
     fn test_insert_to_empty() {
