@@ -151,7 +151,6 @@ impl Default for NodeTree {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Database;
 
     #[test]
     fn test_insert_to_empty() {
