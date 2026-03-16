@@ -15,7 +15,7 @@ async fn load_entries_from_url(
     let mut reader = StreamReader::new(
         response
             .bytes_stream()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)),
+            .map_err(std::io::Error::other),
     );
 
     let mut line = String::new();

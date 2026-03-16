@@ -6,6 +6,7 @@ pub mod metadata;
 pub(crate) mod node;
 pub mod paths;
 pub(crate) mod serializer;
+pub use serializer::Error;
 
 #[derive(Debug, Default)]
 pub struct Database {
@@ -29,7 +30,7 @@ impl Database {
     pub fn insert_value<T: serde::Serialize>(
         &mut self,
         value: T,
-    ) -> Result<data::DataRef, serializer::Error> {
+    ) -> Result<data::DataRef, Error> {
         let result = self.data.insert(value);
         self.update_size();
         result
@@ -40,7 +41,7 @@ impl Database {
         self.update_size();
     }
 
-    pub fn write_to<W: std::io::Write>(&self, writer: W) -> Result<W, serializer::Error> {
+    pub fn write_to<W: std::io::Write>(&self, writer: W) -> Result<W, Error> {
         // write node tree
         let mut writer = self.nodes.write_to(writer, self.metadata.record_size)?;
         // write data section separator
@@ -57,7 +58,7 @@ impl Database {
     }
 
     #[cfg(test)]
-    pub(crate) fn to_vec(&self) -> Result<Vec<u8>, serializer::Error> {
+    pub(crate) fn to_vec(&self) -> Result<Vec<u8>, Error> {
         let mut result = Vec::new();
         self.write_to(&mut result)?;
         Ok(result)
