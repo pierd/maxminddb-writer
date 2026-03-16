@@ -27,10 +27,7 @@ impl Database {
         self.metadata.record_size = metadata::RecordSize::choose(max_ptr_value);
     }
 
-    pub fn insert_value<T: serde::Serialize>(
-        &mut self,
-        value: T,
-    ) -> Result<data::DataRef, Error> {
+    pub fn insert_value<T: serde::Serialize>(&mut self, value: T) -> Result<data::DataRef, Error> {
         let result = self.data.insert(value);
         self.update_size();
         result

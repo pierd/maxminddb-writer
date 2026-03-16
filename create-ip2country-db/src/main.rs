@@ -12,11 +12,7 @@ async fn load_entries_from_url(
     sender: mpsc::Sender<(IpAddrWithMask, String)>,
 ) -> anyhow::Result<()> {
     let response = reqwest::get(url).await?;
-    let mut reader = StreamReader::new(
-        response
-            .bytes_stream()
-            .map_err(std::io::Error::other),
-    );
+    let mut reader = StreamReader::new(response.bytes_stream().map_err(std::io::Error::other));
 
     let mut line = String::new();
     loop {
