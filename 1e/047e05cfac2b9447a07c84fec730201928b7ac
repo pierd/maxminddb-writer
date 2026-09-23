@@ -1,0 +1,14 @@
+maxminddb-writer/Cargo.toml
+  h_373d6cc5be4f86 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1e047e05cfac2b9447a07c84fec730201928b7ac",
+  "prompts": {},
+  "humans": {
+    "h_373d6cc5be4f86": {
+      "author": "Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"
+    }
+  }
+}
