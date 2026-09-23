@@ -103,7 +103,11 @@ impl NodeTree {
         let mut path = path.into_bit_path();
         let mut index = 0;
         let Some(mut last_bit) = path.next() else {
-            // empty path doesn't insert anything
+            for bit in [false, true] {
+                if self.nodes[0][bit].is_none() {
+                    self.nodes[0][bit] = Some(Target::Data(data));
+                }
+            }
             return;
         };
 

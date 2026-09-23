@@ -93,6 +93,51 @@ mod tests {
     }
 
     #[test]
+    fn test_ipv4_default_route() {
+        let mut db = Database::default();
+        let data_42 = db.insert_value(42u32).unwrap();
+        db.insert_node("0.0.0.0/0".parse::<IpAddrWithMask>().unwrap(), data_42);
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let expected_data_42: u32 = reader.lookup([0, 0, 0, 0].into()).unwrap();
+        let expected_data_42_interior: u32 = reader.lookup([8, 8, 8, 8].into()).unwrap();
+        let expected_data_42_max: u32 = reader.lookup([255, 255, 255, 255].into()).unwrap();
+
+        assert_eq!(expected_data_42, 42);
+        assert_eq!(expected_data_42_interior, 42);
+        assert_eq!(expected_data_42_max, 42);
+    }
+
+    #[test]
+    fn test_ipv6_default_route() {
+        let mut db = Database::default();
+        db.metadata.ip_version = crate::metadata::IpVersion::V6;
+        let data_42 = db.insert_value(42u32).unwrap();
+        db.insert_node("::/0".parse::<IpAddrWithMask>().unwrap(), data_42);
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let expected_data_42: u32 = reader
+            .lookup(std::net::IpAddr::V6(std::net::Ipv6Addr::UNSPECIFIED))
+            .unwrap();
+        let expected_data_42_interior: u32 = reader
+            .lookup(std::net::IpAddr::V6(std::net::Ipv6Addr::new(
+                0x2001, 0x4860, 0x4860, 0, 0, 0, 0, 0x8888,
+            )))
+            .unwrap();
+        let expected_data_42_max: u32 = reader
+            .lookup(std::net::IpAddr::V6(std::net::Ipv6Addr::from(
+                [u8::MAX; 16],
+            )))
+            .unwrap();
+
+        assert_eq!(expected_data_42, 42);
+        assert_eq!(expected_data_42_interior, 42);
+        assert_eq!(expected_data_42_max, 42);
+    }
+
+    #[test]
     fn test_small_record_write() {
         let mut db = seed_simple_db();
 
