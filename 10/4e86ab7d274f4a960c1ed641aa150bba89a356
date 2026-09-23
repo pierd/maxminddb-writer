@@ -1,0 +1,14 @@
+Cargo.toml
+  h_373d6cc5be4f86 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "104e86ab7d274f4a960c1ed641aa150bba89a356",
+  "prompts": {},
+  "humans": {
+    "h_373d6cc5be4f86": {
+      "author": "Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"
+    }
+  }
+}
