@@ -1,0 +1,14 @@
+maxminddb-writer/src/serializer.rs
+  h_373d6cc5be4f86 471,492
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d8ed1267f42529de8bb0dce0a0c33d09413f1279",
+  "prompts": {},
+  "humans": {
+    "h_373d6cc5be4f86": {
+      "author": "Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"
+    }
+  }
+}
