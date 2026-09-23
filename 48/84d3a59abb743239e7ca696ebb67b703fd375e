@@ -1,0 +1,16 @@
+create-ip2country-db/src/main.rs
+  h_373d6cc5be4f86 15
+maxminddb-writer/src/lib.rs
+  h_373d6cc5be4f86 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4884d3a59abb743239e7ca696ebb67b703fd375e",
+  "prompts": {},
+  "humans": {
+    "h_373d6cc5be4f86": {
+      "author": "Kuba Jaroszewski <jakub.jaroszewski@gmail.com>"
+    }
+  }
+}
