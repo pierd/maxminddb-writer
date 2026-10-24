@@ -93,6 +93,37 @@ mod tests {
     }
 
     #[test]
+    fn test_identical_values_are_stored_once() {
+        let mut db = Database::default();
+        let first = db.insert_value("foo").unwrap();
+        let data_len = db.data.len();
+
+        let second = db.insert_value("foo".to_string()).unwrap();
+        let other = db.insert_value("bar").unwrap();
+
+        assert_eq!(first, second);
+        assert_ne!(first, other);
+        assert_eq!(db.data.len(), data_len + "bar".len() + 1);
+    }
+
+    #[test]
+    fn test_identical_values_round_trip() {
+        let mut db = Database::default();
+        let foo_a = db.insert_value("foo").unwrap();
+        let foo_b = db.insert_value("foo").unwrap();
+        db.insert_node("0.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), foo_a);
+        db.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), foo_b);
+        let raw_db = db.to_vec().unwrap();
+
+        let reader = maxminddb::Reader::from_source(&raw_db).unwrap();
+        let first: &str = reader.lookup([0, 0, 0, 0].into()).unwrap();
+        let second: &str = reader.lookup([1, 0, 0, 0].into()).unwrap();
+
+        assert_eq!(first, "foo");
+        assert_eq!(second, "foo");
+    }
+
+    #[test]
     fn test_ipv4_default_route() {
         let mut db = Database::default();
         let data_42 = db.insert_value(42u32).unwrap();
