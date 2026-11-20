@@ -169,6 +169,77 @@ mod tests {
     }
 
     #[test]
+    fn test_replaced_subtrees_compact_output() {
+        let mut db = Database::default();
+        let narrow = db.insert_value("narrow").unwrap();
+        let broad = db.insert_value("broad").unwrap();
+        db.insert_node("1.0.0.0/24".parse::<IpAddrWithMask>().unwrap(), narrow);
+        db.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), broad);
+        let bytes = db.to_vec().unwrap();
+        let reader = maxminddb::Reader::from_source(&bytes).unwrap();
+        assert_eq!(reader.metadata.node_count, 16);
+        for ip in [[1, 0, 0, 1], [1, 0, 255, 255]] {
+            assert_eq!(reader.lookup::<&str>(ip.into()).unwrap(), "broad");
+        }
+        assert!(reader.lookup::<&str>([2, 0, 0, 1].into()).is_err());
+
+        let mut control = Database::default();
+        control.insert_value("narrow").unwrap();
+        let broad = control.insert_value("broad").unwrap();
+        control.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), broad);
+        assert_eq!(bytes, control.to_vec().unwrap());
+    }
+
+    #[test]
+    fn test_replaced_subtrees_remap_pointers() {
+        let mut db = Database::default();
+        let narrow = db.insert_value("narrow").unwrap();
+        let disjoint = db.insert_value("disjoint").unwrap();
+        let broad = db.insert_value("broad").unwrap();
+        db.insert_node("1.0.0.0/24".parse::<IpAddrWithMask>().unwrap(), narrow);
+        db.insert_node("2.0.0.0/24".parse::<IpAddrWithMask>().unwrap(), disjoint);
+        db.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), broad);
+        for exception in [false, true] {
+            if exception {
+                let data = db.insert_value("exception").unwrap();
+                db.insert_node("1.0.1.0/24".parse::<IpAddrWithMask>().unwrap(), data);
+            }
+            for width in [RecordSize::Small, RecordSize::Medium, RecordSize::Large] {
+                db.metadata.record_size = width;
+                let bytes = db.to_vec().unwrap();
+                let reader = maxminddb::Reader::from_source(&bytes).unwrap();
+                for (ip, expected) in [
+                    ([1, 0, 0, 1], "broad"),
+                    ([1, 0, 1, 1], if exception { "exception" } else { "broad" }),
+                    ([2, 0, 0, 1], "disjoint"),
+                ] {
+                    assert_eq!(reader.lookup::<&str>(ip.into()).unwrap(), expected);
+                }
+                assert!(reader.lookup::<&str>([3, 0, 0, 1].into()).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn test_replaced_subtrees_reduce_record_size() {
+        let mut db = Database::default();
+        let narrow = db.insert_value("narrow").unwrap();
+        let broad = db.insert_value("broad").unwrap();
+        let data_len = (1usize << 24) - 16 - 20;
+        db.insert_value("x".repeat(data_len - db.data.len() - 4))
+            .unwrap();
+        assert_eq!(db.data.len(), data_len);
+        db.insert_node("1.0.0.0/24".parse::<IpAddrWithMask>().unwrap(), narrow);
+        assert!(matches!(db.metadata.record_size, RecordSize::Medium));
+        db.insert_node("1.0.0.0/16".parse::<IpAddrWithMask>().unwrap(), broad);
+        assert!(matches!(db.metadata.record_size, RecordSize::Small));
+        let bytes = db.to_vec().unwrap();
+        let reader = maxminddb::Reader::from_source(&bytes).unwrap();
+        assert_eq!(reader.metadata.record_size, 24);
+        assert_eq!(reader.lookup::<&str>([1, 0, 0, 1].into()).unwrap(), "broad");
+    }
+
+    #[test]
     fn test_small_record_write() {
         let mut db = seed_simple_db();
 
