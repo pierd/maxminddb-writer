@@ -9,9 +9,9 @@ enum Target {
 }
 
 impl Target {
-    fn to_ptr(self, node_count: usize) -> usize {
+    fn to_ptr(self, node_count: usize, mapping: Option<&[usize]>) -> usize {
         match self {
-            Target::Node(node) => node.index,
+            Target::Node(node) => mapping.map_or(node.index, |indices| indices[node.index]),
             Target::Data(data) => data.data_section_offset(node_count),
         }
     }
@@ -26,13 +26,14 @@ impl Node {
         writer: &mut impl std::io::Write,
         record_size: RecordSize,
         node_count: usize,
+        mapping: Option<&[usize]>,
     ) -> Result<(), std::io::Error> {
         let ptrs = [
             self.0[0]
-                .map(|t| t.to_ptr(node_count))
+                .map(|t| t.to_ptr(node_count, mapping))
                 .unwrap_or(node_count),
             self.0[1]
-                .map(|t| t.to_ptr(node_count))
+                .map(|t| t.to_ptr(node_count, mapping))
                 .unwrap_or(node_count),
         ];
         match record_size {
@@ -91,12 +92,42 @@ struct NodeRef {
 
 #[derive(Debug)]
 pub struct NodeTree {
-    nodes: Vec<Node>,
+    nodes: Vec<Option<Node>>,
+    free: Vec<NodeRef>,
 }
 
 impl NodeTree {
     pub fn len(&self) -> usize {
-        self.nodes.len()
+        self.nodes.len() - self.free.len()
+    }
+
+    fn allocate(&mut self, node: Node) -> NodeRef {
+        if let Some(slot) = self.free.pop() {
+            self.nodes[slot.index] = Some(node);
+            slot
+        } else {
+            let slot = NodeRef {
+                index: self.nodes.len(),
+            };
+            self.nodes.push(Some(node));
+            slot
+        }
+    }
+
+    fn release_subtree(&mut self, target: Option<Target>) {
+        let Some(Target::Node(root)) = target else {
+            return;
+        };
+        let mut pending = vec![root];
+        while let Some(slot) = pending.pop() {
+            let node = self.nodes[slot.index].take().expect("live detached node");
+            for child in node.0 {
+                if let Some(Target::Node(child)) = child {
+                    pending.push(child);
+                }
+            }
+            self.free.push(slot);
+        }
     }
 
     pub fn insert(&mut self, path: impl IntoBitPath, data: DataRef) {
@@ -104,15 +135,15 @@ impl NodeTree {
         let mut index = 0;
         let Some(mut last_bit) = path.next() else {
             for bit in [false, true] {
-                if self.nodes[0][bit].is_none() {
-                    self.nodes[0][bit] = Some(Target::Data(data));
+                if self.nodes[0].as_ref().unwrap()[bit].is_none() {
+                    self.nodes[0].as_mut().unwrap()[bit] = Some(Target::Data(data));
                 }
             }
             return;
         };
 
         for bit in path {
-            let target = self.nodes[index][last_bit];
+            let target = self.nodes[index].as_ref().unwrap()[last_bit];
             match target {
                 // node points to another -> follow the path
                 Some(Target::Node(NodeRef { index: new_index })) => {
@@ -121,15 +152,16 @@ impl NodeTree {
                 // node points to data (or is empty) -> split the node
                 Some(Target::Data(_)) | None => {
                     let old_index = index;
-                    index = self.nodes.len();
-                    self.nodes.push(Node([target, target]));
-                    self.nodes[old_index][last_bit] = Some(Target::Node(NodeRef { index }));
+                    let slot = self.allocate(Node([target, target]));
+                    index = slot.index;
+                    self.nodes[old_index].as_mut().unwrap()[last_bit] = Some(Target::Node(slot));
                 }
             }
             last_bit = bit;
         }
 
-        self.nodes[index][last_bit] = Some(Target::Data(data));
+        let detached = self.nodes[index].as_mut().unwrap()[last_bit].replace(Target::Data(data));
+        self.release_subtree(detached);
     }
 
     pub fn write_to<W: std::io::Write>(
@@ -137,8 +169,22 @@ impl NodeTree {
         mut writer: W,
         record_size: RecordSize,
     ) -> Result<W, std::io::Error> {
-        for node in &self.nodes {
-            node.write_to(&mut writer, record_size, self.len())?;
+        let node_count = self.len();
+        let mapping = if self.free.is_empty() {
+            None
+        } else {
+            let mut indices = vec![0; self.nodes.len()];
+            let mut next = 0;
+            for (index, node) in self.nodes.iter().enumerate() {
+                if node.is_some() {
+                    indices[index] = next;
+                    next += 1;
+                }
+            }
+            Some(indices)
+        };
+        for node in self.nodes.iter().flatten() {
+            node.write_to(&mut writer, record_size, node_count, mapping.as_deref())?;
         }
         Ok(writer)
     }
@@ -147,7 +193,8 @@ impl NodeTree {
 impl Default for NodeTree {
     fn default() -> Self {
         Self {
-            nodes: vec![Node::default()],
+            nodes: vec![Some(Node::default())],
+            free: Vec::new(),
         }
     }
 }
@@ -163,19 +210,19 @@ mod tests {
         tree.insert([false].into_iter(), DataRef { index: 0 });
         assert_eq!(tree.nodes.len(), 1);
         assert_eq!(
-            tree.nodes[0][false],
+            tree.nodes[0].as_ref().unwrap()[false],
             Some(Target::Data(DataRef { index: 0 }))
         );
-        assert_eq!(tree.nodes[0][true], None);
+        assert_eq!(tree.nodes[0].as_ref().unwrap()[true], None);
 
         tree.insert([true].into_iter(), DataRef { index: 1 });
         assert_eq!(tree.nodes.len(), 1);
         assert_eq!(
-            tree.nodes[0][false],
+            tree.nodes[0].as_ref().unwrap()[false],
             Some(Target::Data(DataRef { index: 0 }))
         );
         assert_eq!(
-            tree.nodes[0][true],
+            tree.nodes[0].as_ref().unwrap()[true],
             Some(Target::Data(DataRef { index: 1 }))
         );
     }
